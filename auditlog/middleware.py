@@ -9,37 +9,10 @@ from django.utils.deprecation import MiddlewareMixin
 
 from auditlog.models import LogEntry
 
-from rest_framework.authentication import TokenAuthentication
-from django.utils.functional import SimpleLazyObject
-from django.utils.deprecation import MiddlewareMixin
-from django.contrib.auth.middleware import get_user
-
-class RestAuthMiddleware(MiddlewareMixin):
-
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    @staticmethod
-    def get_user(request):
-        user = get_user(request)
-        if user.is_authenticated:
-            return user
-        token_authentication = TokenAuthentication()
-        try:
-            user, token = token_authentication.authenticate(request)
-        except:
-            pass
-        return user
-
-    def __call__(self, request):
-        request.user = SimpleLazyObject(lambda: self.__class__.get_user(request))
-        response = self.get_response(request)
-        return response
-
 threadlocal = threading.local()
 
 
-class AuditlogMiddleware(RestAuthMiddleware):
+class AuditlogMiddleware(MiddlewareMixin):
     """
     Middleware to couple the request's user to log items. This is accomplished by currying the signal receiver with the
     user from the request (or None if the user is not authenticated).
